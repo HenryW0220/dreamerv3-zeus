@@ -96,7 +96,12 @@ def make_monitor(enabled=True, gpu_indices=(0,)):
         return None
 
     try:
-        return ZeusMonitor(gpu_indices=list(gpu_indices))
+        return ZeusMonitor(
+            gpu_indices=list(gpu_indices),
+            sync_execution_with="jax",
+            cpu_indices=[],
+            approx_instant_energy=True,
+        )
     except Exception as e:
         print(f"[zeus_energy] Failed to create ZeusMonitor: {e}", flush=True)
         return None
@@ -116,7 +121,10 @@ def energy_window(monitor, label, logfile):
     start_time = None
 
     try:
-        monitor.begin_window(label)
+        # sync_execution=False: JAX sets jax_transfer_guard='disallow' which blocks
+        # Zeus's internal device_put sync. We handle synchronization ourselves via
+        # block_until_ready() in train.py before the window closes.
+        monitor.begin_window(label, sync_execution=False)
         start_time = time.perf_counter()
         measuring = True
     except Exception as e:
@@ -129,7 +137,7 @@ def energy_window(monitor, label, logfile):
         if measuring:
             try:
                 duration_sec = time.perf_counter() - start_time
-                measurement = monitor.end_window(label)
+                measurement = monitor.end_window(label, sync_execution=False)
 
                 record = {
                     "label": label,

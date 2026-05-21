@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(conda info *)",
+      "Bash(which conda *)",
+      "Bash(wsl *)",
+      "Bash(dpkg --print-architecture)"
+    ]
+  }
+}
